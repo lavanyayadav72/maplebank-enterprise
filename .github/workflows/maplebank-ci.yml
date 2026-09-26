@@ -37,7 +37,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t maplebank-api:${{ github.sha }} ./app
+          docker build --pull --no-cache -t maplebank-api:${{ github.sha }} ./app
 
       - name: Scan Docker image for vulnerabilities
         uses: aquasecurity/trivy-action@master
