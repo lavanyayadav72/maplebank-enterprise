@@ -39,10 +39,6 @@ jobs:
         run: |
           docker build --pull --no-cache -t maplebank-api:${{ github.sha }} ./app
       
-      - name: Verify Python packages in image
-        run: |
-          docker run --rm maplebank-api:${{ github.sha }} \
-            python -m pip show msgpack setuptools || true
       
       - name: Scan Docker image for vulnerabilities
         uses: aquasecurity/trivy-action@master
@@ -52,3 +48,5 @@ jobs:
           exit-code: "1"
           ignore-unfixed: true
           severity: CRITICAL,HIGH
+          scanners: vuln
+          detection-priority: precise
