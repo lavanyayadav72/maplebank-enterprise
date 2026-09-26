@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maplebank-api-selector
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: maplebank-api-selector
+  template:
+    metadata:
+      labels:
+        app: maplebank-api-selector
+    spec:
+      nodeSelector:
+        workload: application
+      containers:
+        - name: maplebank-api
+          image: maplebank-api:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000

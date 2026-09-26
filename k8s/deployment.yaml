@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maplebank-api
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: maplebank-api
+
+  template:
+    metadata:
+      labels:
+        app: maplebank-api
+
+    spec:
+      containers:
+        - name: maplebank-api
+          image: maplebank-api:v1
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 5000
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3

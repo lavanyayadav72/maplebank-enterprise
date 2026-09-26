@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: maplebank-node-agent
+spec:
+  selector:
+    matchLabels:
+      app: maplebank-node-agent
+
+  template:
+    metadata:
+      labels:
+        app: maplebank-node-agent
+
+    spec:
+      containers:
+        - name: node-agent
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "MapleBank node agent started"
+              sleep 3600

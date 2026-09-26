@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: keyvault-test
+  namespace: maplebank-dev
+  labels:
+    azure.workload.identity/use: "true"
+spec:
+  serviceAccountName: maplebank-api-sa
+  restartPolicy: Never
+  containers:
+    - name: azure-cli
+      image: mcr.microsoft.com/azure-cli:latest
+      command:
+        - /bin/sh
+        - -c
+        - sleep 3600

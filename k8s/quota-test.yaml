@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quota-test
+  namespace: maplebank-governance
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: quota-test
+  template:
+    metadata:
+      labels:
+        app: quota-test
+    spec:
+      containers:
+        - name: test
+          image: nginx:1.27
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
