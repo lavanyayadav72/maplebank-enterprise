@@ -1,0 +1,90 @@
+name: MapleBank CD
+
+on:
+  workflow_run:
+    workflows: ["MapleBank CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACR_LOGIN_SERVER: maplebankacrdev099.azurecr.io
+  IMAGE_NAME: maplebank-api
+  AKS_RESOURCE_GROUP: rg-maplebank-dev-eastus-001
+  AKS_CLUSTER_NAME: aks-maplebank-dev-eastus-001
+  NAMESPACE: maplebank-dev
+
+jobs:
+  deploy-dev:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group $AKS_RESOURCE_GROUP \
+            --name $AKS_CLUSTER_NAME \
+            --overwrite-existing
+
+      - name: Deploy to Dev
+        run: |
+          kubectl create namespace $NAMESPACE \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+
+          kubectl apply \
+            -f terraform/environments/dev/service-account.yaml \
+            -n $NAMESPACE
+
+          kubectl apply \
+            -f terraform/environments/dev/maplebank-deployment.yaml \
+            -n $NAMESPACE
+
+          kubectl set image deployment/maplebank-api \
+            maplebank-api=$ACR_LOGIN_SERVER/$IMAGE_NAME:${{ github.event.workflow_run.head_sha }} \
+            -n $NAMESPACE
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status \
+            deployment/maplebank-api \
+            -n $NAMESPACE \
+            --timeout=180s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n $NAMESPACE
+          kubectl get deployment maplebank-api -n $NAMESPACE
+
+      - name: Dev smoke test
+        run: |
+          kubectl port-forward \
+            deployment/maplebank-api \
+            5000:5000 \
+            -n $NAMESPACE > /tmp/port-forward.log 2>&1 &
+
+          sleep 5
+
+          curl --fail \
+            --retry 5 \
+            --retry-delay 2 \
+            http://127.0.0.1:5000/health

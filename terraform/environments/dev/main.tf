@@ -179,3 +179,17 @@ module "sql" {
 
   application_vnet_id = module.networking.vnet_id
 }
+
+module "github_identity" {
+  source = "../../modules/github-identity"
+
+  resource_group_name = azurerm_resource_group.maplebank.name
+  location            = var.location
+  environment         = var.environment
+
+  repository = "lavanyayadav72/maplebank-enterprise"
+  branch     = "main"
+
+  acr_id = module.acr.acr_id
+  aks_id = module.aks.aks_id
+}

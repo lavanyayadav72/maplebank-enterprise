@@ -10,6 +10,10 @@ on:
       - main
       - develop
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-test:
 
@@ -35,18 +39,36 @@ jobs:
         run: |
           python -m py_compile app.py
 
-      - name: Build Docker image
+      - name: Build immutable image
         run: |
-          docker build --pull --no-cache -t maplebank-api:${{ github.sha }} ./app
-      
+          docker build \
+            --pull \
+            -t maplebankacrdev099.azurecr.io/maplebank-api:${{ github.sha }} \
+            ./app
+
       - name: Scan Docker image for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: maplebank-api:${{ github.sha }}
+          image-ref: maplebankacrdev099.azurecr.io/maplebank-api:${{ github.sha }}
           format: table
           exit-code: "0"
           ignore-unfixed: true
           severity: HIGH,CRITICAL
           scanners: vuln
           vuln-type: os,library
-      
+
+      - name: Authenticate to Azure
+        if: ${{ github.event_name == 'push' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Push immutable image to ACR
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          az acr login --name maplebankacrdev099
+
+          docker push \
+            maplebankacrdev099.azurecr.io/maplebank-api:${{ github.sha }}

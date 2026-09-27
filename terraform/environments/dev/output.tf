@@ -47,3 +47,8 @@ output "identity_client_id" {
   description = "Client ID of the MapleBank API managed identity"
   value       = module.identity.client_id
 }
+
+output "github_actions_client_id" {
+  description = "Client ID for GitHub Actions OIDC deployment identity"
+  value       = module.github_identity.client_id
+}
